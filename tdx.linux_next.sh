@@ -2,21 +2,18 @@
 
 # DESCRIPTION #
 # a template to test mainline linux_next kernel as TD guest image
-##  step 0: create $KERNEL_PATH if not exists and git clone https://github.com/torvalds/linux.git
+##  step 0: create $KERNEL_PATH if not exists and git clone from linux-next repo
 ##  step 1: git checkout to latest release tag $TAG from above branch
 ##  step 2: ./scripts/config revise CONFIG_INTEL_TDX_GUEST=y and append tag info $TAG to CONFIG_LOCALVERSION
 ##  step 3: compile kernel and cp it as bzImage.$TAG
 ##  step 4: pass above kernel bzImage to td_guest_boot.sh for TD guest booting test
-# may need to extend step 4 to cover more guest kernel booting regression check?
+# DESCRIPTION END #
 
 # variables
 KERNEL_PATH=$HOME/linux_next_mainline
 
 # common functions
 script_path() {
-  #TEMP_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
-  #TEMP_PATH="$(dirname $0)"
-  #SCRIPT_PATH="$(cd "$TEMP_PATH" && pwd)"
   SCRIPT_PATH="$( cd "$( dirname "$0" )" && pwd )"
   [ -z "$SCRIPT_PATH" ] && exit 1
   echo "$SCRIPT_PATH"
@@ -69,8 +66,6 @@ compile() {
 set -x
 
 echo "step 0:"
-echo $PWD
-
 SOURCE_PATH=$(script_path)
 
 # Do the work
@@ -78,19 +73,16 @@ SOURCE_PATH=$(script_path)
 [ ! -d "$KERNEL_PATH"/linux-next ] && clone
 
 echo "step 1:"
-echo $PWD
 
 # step 1
 checkout
 
 echo "step 2:"
-echo $PWD
 
 # step 2
 kconfig
 
 echo "step 3:"
-echo $PWD
 
 # step 3
 compile
@@ -98,7 +90,6 @@ compile
 echo "step 4:"
 grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
 grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
-
 KERNEL_IMAGE="$KERNEL_PATH"/linux-next/arch/x86/boot/bzImage."${TAG}"
 
 # step 4
