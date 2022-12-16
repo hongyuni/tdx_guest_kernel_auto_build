@@ -63,31 +63,46 @@ compile() {
   cp arch/x86/boot/bzImage arch/x86/boot/bzImage."$TAG"
 }
 
-set -x
+#set -x
 
+echo "####################################################################"
 echo "step 0:"
+echo "create $KERNEL_PATH if not exists and git clone from linux-next repo"
+echo "####################################################################"
 SOURCE_PATH=$(script_path)
 
 # Do the work
 # step 0
 [ ! -d "$KERNEL_PATH"/linux-next ] && clone
 
+echo "####################################################################"
 echo "step 1:"
+echo "git checkout to latest release tag $TAG from above branch"
+echo "####################################################################"
 
 # step 1
 checkout
 
+echo "####################################################################"
 echo "step 2:"
+echo "revise CONFIG_INTEL_TDX_GUEST=y/CONFIG_TDX_GUEST_DRIVER=y and append tag info $TAG to CONFIG_LOCALVERSION"
+echo "####################################################################"
 
 # step 2
 kconfig
 
+echo "####################################################################"
 echo "step 3:"
+echo "compile kernel and cp it as bzImage.$TAG"
+echo "####################################################################"
 
 # step 3
 compile
 
+echo "####################################################################"
 echo "step 4:"
+echo "pass bzImage.$TAG to td_guest_boot.sh for TD guest booting test"
+echo "####################################################################"
 grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
 grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
 KERNEL_IMAGE="$KERNEL_PATH"/linux-next/arch/x86/boot/bzImage."${TAG}"
