@@ -46,10 +46,11 @@ kconfig() {
   cd "${KERNEL_PATH}"/linux-next || exit 1
   cp "$SOURCE_PATH"/tdx.gold.config .config
   make olddefconfig
-  ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER
+  ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER --enable CONFIG_KVM_GUEST
   ./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
   yes "" | make config
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
+  grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
   grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
   #./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
 }
@@ -58,6 +59,7 @@ compile() {
   cd "${KERNEL_PATH}"/linux-next || exit 1
   rm -rf arch/x86/boot/bzImage
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
+  grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
   grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
   make ARCH=x86_64 CC="ccache gcc" -j"$(nproc)" -C ./
   cp arch/x86/boot/bzImage arch/x86/boot/bzImage."$TAG"
@@ -85,7 +87,7 @@ checkout
 
 echo "####################################################################"
 echo "step 2:"
-echo "revise CONFIG_INTEL_TDX_GUEST=y/CONFIG_TDX_GUEST_DRIVER=y and append tag info $TAG to CONFIG_LOCALVERSION"
+echo "revise CONFIG_INTEL_TDX_GUEST=y/CONFIG_TDX_GUEST_DRIVER=y/CONFIG_KVM_GUEST=y and append tag info $TAG to CONFIG_LOCALVERSION"
 echo "####################################################################"
 
 # step 2
@@ -104,6 +106,7 @@ echo "step 4:"
 echo "pass bzImage.$TAG to td_guest_boot.sh for TD guest booting test"
 echo "####################################################################"
 grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
+grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
 grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
 KERNEL_IMAGE="$KERNEL_PATH"/linux-next/arch/x86/boot/bzImage."${TAG}"
 
