@@ -6,11 +6,11 @@ echo $SCRIPT_DIR
 #TDX guest kernel image passed by argument
 KERNEL_IMAGE=$1
 #TDVF from edk2 upstream
-BIOS_IMAGE=/home/tdx_hy/OVMF.edk2-stable202211.fd
+BIOS_IMAGE=/home/sdp/tdx/hongyu/OVMF.edk2-stable202211.fd
 #QEMU from github tdx-qemu dev repo
-QEMU_IMAGE=/home/tdx_hy/git_qemu_tdx_github/qemu-tdx/build/qemu-system-x86_64.tdx-upstream-wip-2022-11-16-v7.1
+QEMU_IMAGE=/home/sdp/tdx/hongyu/git_qemu_tdx/qemu-tdx/build/qemu-system-x86_64.tdx-upstream-wip-2022-11-16-v7.1
 #GUEST_IMAGE qcow2 file
-GUEST_IMAGE=/home/tdx_hy/td-guest-centos-stream-8.linux_next.qcow2
+GUEST_IMAGE=/home/sdp/tdx/hongyu/td-guest-centos-stream-8.linux_next.qcow2
 MEM=1G
 
 if [[ ! -f $QEMU_IMAGE ]]; then
