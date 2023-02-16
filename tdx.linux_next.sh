@@ -103,7 +103,7 @@ compile
 
 echo "####################################################################"
 echo "step 4:"
-echo "pass bzImage.$TAG to td_guest_boot.sh for TD guest booting test"
+echo "pass bzImage.$TAG to qemu.tdx.sh for TD guest booting test"
 echo "####################################################################"
 grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
 grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
