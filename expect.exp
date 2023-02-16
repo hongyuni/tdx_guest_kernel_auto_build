@@ -1,0 +1,16 @@
+#!/usr/bin/expect
+
+spawn ssh.sh
+
+set password "123456"
+set timeout 120
+set testdone "linux-next td guest booting test complete"
+
+expect {
+        "assword:" { send $password\r; set err 0; exp_continue }
+        "root@td-guest" { send "uname -r\r"; set err 0; exp_continue }
+        "next-" { send "systemctl reboot now\r"; set err 0; exp_continue }
+        "closed by remote host" { send_user \n$testdone\n; set err 0; }
+        timeout { puts "timed out during linux-next td guest testing"; exit 1 }
+        eof
+}
