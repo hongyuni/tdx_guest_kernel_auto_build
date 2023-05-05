@@ -11,4 +11,6 @@ step 2: ./scripts/config revise CONFIG_INTEL_TDX_GUEST=y and append tag info $TA
 
 step 3: compile kernel and cp it as bzImage.$TAG
 
-step 4: pass above kernel bzImage to td_guest_boot.sh for TD guest booting test
+step 4: bootup legacy VM to prepare guest image
+
+step 5: pass above kernel bzImage to td_guest_boot.sh for TD guest booting test
