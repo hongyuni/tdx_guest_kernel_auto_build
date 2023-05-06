@@ -110,5 +110,103 @@ grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
 grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
 KERNEL_IMAGE="$KERNEL_PATH"/linux-next/arch/x86/boot/bzImage."${TAG}"
 
+# Please pre-set the guest image passwd to 123456
+export SSHPASS='123456'
+PORT=10007
+ATTEST_DEV=/dev/tdx_guest
+SLEEP=30
+
+prepare_guest_image()
+{
+  sleep $SLEEP
+  sshpass -e scp -P $PORT ${SOURCE_PATH}/guest_scripts/* root@localhost:/root/
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "chmod +x /root/*.sh"
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "yum install stress -y"
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
+}
+
+check_lscpu()
+{
+  sleep $SLEEP
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "sh /root/check_lscpu.sh ${1}"
+  if [ $? -ne 0 ]; then
+    echo "TDX is not enabled in guest or CPU number is not correct"
+    exit 1
+  fi
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
+}
+
+check_attest_dev()
+{
+  sleep $SLEEP
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "sh /root/check_attest_dev.sh ${ATTEST_DEV}"
+  if [ $? -ne 0 ]; then
+    echo "TDX attest device doesn't exist."
+    exit 1
+  fi
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
+}
+
+check_lazy_accept()
+{
+  sleep $SLEEP
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "sh /root/check_lazy_accept.sh"
+  if [ $? -ne 0 ]; then
+    echo "TDX attest device doesn't exist."
+    exit 1
+  fi
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
+}
+
+check_ebizzy()
+{
+  sleep $SLEEP
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "sh /root/check_ebizzy.sh"
+  if [ $? -ne 0 ]; then
+    echo "TDX attest device doesn't exist."
+    exit 1
+  fi
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
+}
+
 # step 4
-/"$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE"
+# Bootup legacy VM using TDX SW ingredients and prepare guest image
+nohup sh ${SOURCE_PATH}/qemu.legacy.sh "$KERNEL_IMAGE" &
+prepare_guest_image
+
+# step 5
+# Bootup TD with 1 CPU and 1G memory
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 1 1 1 on &
+check_lscpu 1
+
+# Bootup TD with 1 CPU and 16G memory
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 1 1 16 on &
+check_lscpu 1
+
+# Bootup TD with 16 CPU, 2 socket and 16G memory
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 16 2 16 on &
+check_lscpu 16
+
+# Bootup TD with 16 CPU, 2 socket and 96G memory
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 16 2 96 on &
+check_lscpu 16
+
+# Bootup TD with 64 CPU, 8 socket and 96G memory
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 64 8 96 on &
+check_lscpu 64
+
+# Bootup TD with 16 CPU, 2 socket and 16G memory with debug OFF
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 16 2 16 off &
+check_lscpu 16
+
+# Check the existence of /dev/tdx_guest
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 16 2 16 on &
+check_attest_dev
+
+# Check lazy accept
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 16 2 16 on &
+check_lazy_accept
+
+# ebizzy test in TD guest
+nohup sh "$SOURCE_PATH"/qemu.tdx.sh "$KERNEL_IMAGE" 16 2 16 on &
+check_ebizzy

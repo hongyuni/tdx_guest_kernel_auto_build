@@ -11,50 +11,16 @@ BIOS_IMAGE=/home/sdp/tdx/hongyu/OVMF.edk2-stable202211.fd
 QEMU_IMAGE=/home/sdp/tdx/hongyu/git_qemu_tdx/qemu-tdx/build/qemu-system-x86_64.tdx-upstream-wip-2022-11-16-v7.1
 #GUEST_IMAGE qcow2 file
 GUEST_IMAGE=/home/sdp/tdx/hongyu/td-guest-centos-stream-8.linux_next.qcow2
-#TDX guest bootup parameters
-CPU=$2
-SOCKET=$3
-MEM=$4
-DEBUG=$5
-
-if [[ ! -f $QEMU_IMAGE ]]; then
-	echo "Qemu image $QEMU_IMAGE does not exist"
-	exit 1
-else
-	echo "Using Qemu binary $QEMU_IMAGE"
-fi
-
-
-if [[ ! -f $KERNEL_IMAGE ]]; then
-	echo "Guest kernel $KERNEL_IMAGE does not exist"
-	exit 1
-else
-	echo "Guest kernel is $KERNEL_IMAGE"
-fi
-
-TDX_SYSFS_FILE="/sys/module/kvm_intel/parameters/tdx"
-if [[ -f $TDX_SYSFS_FILE ]]; then
-	if [ "Y" != "$(cat $TDX_SYSFS_FILE)" ] ;then
-    		echo "Please set tdx kvm_intel params to Y"
-		exit 1
-	fi
-else
-	echo "tdx modules params does not exist, reload correct kvm"
-	exit 1
-fi
 
 $QEMU_IMAGE \
 	-accel kvm \
 	-no-reboot \
-	-name process=tdxvm_hy,debug-threads=on \
+	-name process=legacy_vm,debug-threads=on \
 	-cpu host,host-phys-bits,pmu=off \
-	-smp cpus=${CPU},sockets=${SOCKET} \
-	-m ${MEM}G \
-	-object tdx-guest,id=tdx,debug=${DEBUG},sept-ve-disable=on,quote-generation-service=vsock:2:4050 \
-	-object memory-backend-memfd-private,id=ram1,size=${MEM}G \
-	-machine q35,kernel_irqchip=split,confidential-guest-support=tdx,memory-backend=ram1 \
+	-smp cpus=4,sockets=1 \
+	-m 4G \
+	-machine q35,kernel_irqchip=split \
 	-bios $BIOS_IMAGE \
-	-d guest_errors \
 	-nographic \
 	-vga none \
 	-device virtio-net-pci,netdev=mynet0,mac=00:16:3E:68:08:FF,romfile= \
