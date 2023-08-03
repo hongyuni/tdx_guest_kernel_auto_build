@@ -33,7 +33,7 @@ $QEMU_IMAGE \
 	-monitor chardev:mux \
 	-drive file=${GUEST_IMAGE},if=virtio,format=qcow2 \
 	-kernel ${KERNEL_IMAGE} \
-	-append "root=/dev/vda3 ro console=hvc0 earlyprintk=ttyS0 ignore_loglevel debug earlyprintk l1tf=off initcall_debug log_buf_len=200M swiotlb=force tsc=reliable efi=debug noapic nokaslr" \
+	-append "root=/dev/vda3 ro console=hvc0 earlyprintk=ttyS0 ignore_loglevel debug earlyprintk l1tf=off initcall_debug log_buf_len=200M swiotlb=force tsc=reliable efi=debug nokaslr" \
 	-monitor pty \
 	-monitor telnet:127.0.0.1:9099,server,nowait \
 	-no-hpet \

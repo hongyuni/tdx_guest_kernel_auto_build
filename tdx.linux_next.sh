@@ -35,6 +35,7 @@ checkout() {
   echo "start to checkout to latest tag..."
   git fetch --all
   TAG=$(git tag --list --sort=-creatordate | head -1)
+  #TAG="next-20230530"
   git checkout "${TAG}"
   TAG_VERIFY=$(git describe --tags --exact-match)
   [ "${TAG}" = "${TAG_VERIFY}" ] || exit 1
@@ -47,6 +48,8 @@ kconfig() {
   cp "$SOURCE_PATH"/tdx.gold.config .config
   make olddefconfig
   ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER --enable CONFIG_KVM_GUEST
+  ./scripts/config --enable CONFIG_FUSE_FS --enable CONFIG_VIRTIO_FS --enable CONFIG_VIRTIO_BALLOON --enable CONFIG_VIRTIO_PMEM
+  ./scripts/config --enable CONFIG_XFS_SUPPORT_V4 --enable CONFIG_XFS_ONLINE_SCRUB --enable CONFIG_XFS_ONLINE_REPAIR --enable CONFIG_XFS_WARN --enable CONFIG_XFS_DEBUG
   ./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
   yes "" | make config
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
@@ -123,8 +126,8 @@ prepare_guest_image()
   sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "chmod +x /root/*.sh"
   sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "yum install stress -y"
 
-  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "[[ -e /root/2023WW21.tar.gz ]] || wget http://hongyu-dev.sh.intel.com/2023WW21.tar.gz -P /root/"
-  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root && [[ -e 2023WW21 ]] || tar -zxvf 2023WW21.tar.gz"
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "[[ -e /root/2023WW23.tar.gz ]] || wget http://hongyu-dev.sh.intel.com/2023WW23.tar.gz -P /root/"
+  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root && [[ -e 2023WW23 ]] || tar -zxvf 2023WW23.tar.gz"
 
   sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
 }
@@ -185,7 +188,8 @@ check_ebizzy()
 run_ddt()
 {
 	sleep $SLEEP
-	sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root/2023WW21/ && ./clkv run -p spr -o tdx.$(uname -r) -x 'nl=TDX_XS_BAT_GUEST_KCONFIG'"
+	sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root/2023WW23/ && ./clkv run -p spr -o tdx.$(uname -r) -x 'scenario=tdx_guest_bat_tests'"
+	sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root/2023WW23/ && ./clkv run -p spr -o tdx.$(uname -r) -x 'scenario=tdx_guest_func_tests'"
 	# can extend here to add more DDT TCs
 	# sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root/2023WW21/ && ./clkv run -p spr -o tdx.$(uname -r) -x 'nl=TDX_TC_1,TDX_TC_2'"
 	# sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "cd /root/2023WW21/ && ./clkv run -p spr -o tdx.$(uname -r) -x 'scenario=TDX_test_scenario'"
