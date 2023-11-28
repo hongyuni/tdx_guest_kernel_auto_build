@@ -6,9 +6,9 @@ echo $SCRIPT_DIR
 #TDX guest kernel image passed by argument
 KERNEL_IMAGE=$1
 #TDVF from edk2 upstream
-BIOS_IMAGE=/tdx/home/sdp/tdx/hongyu/OVMF.edk2-stable202211.fd
+BIOS_IMAGE=/usr/share/qemu/OVMF.fd
 #QEMU from github tdx-qemu dev repo
-QEMU_IMAGE=/tdx/home/sdp/tdx/host_qemu_github/qemu-tdx/build/qemu-system-x86_64.tdx-qemu-2023-3-13-v7.2-kvm-upstream-2023.03.10-v6.2-wa
+QEMU_IMAGE=/tdx/home/sdp/tdx/host_qemu_github/qemu-tdx/build/qemu-system-x86_64.tdx-qemu-2023.9.21-v8.1.0-kvm-upstream-2023.9.19-v6.6-rc1-wa
 #GUEST_IMAGE qcow2 file
 GUEST_IMAGE=/tdx/home/sdp/tdx/hongyu/td-guest-centos-stream-8.common.qcow2
 #TDX guest bootup parameters
@@ -50,8 +50,8 @@ $QEMU_IMAGE \
 	-cpu host,host-phys-bits,pmu=off \
 	-smp cpus=${CPU},sockets=${SOCKET} \
 	-m ${MEM}G \
-	-object tdx-guest,id=tdx,debug=${DEBUG},sept-ve-disable=on,quote-generation-service=vsock:2:4050 \
-	-object memory-backend-memfd-private,id=ram1,size=${MEM}G \
+	-object '{"qom-type":"tdx-guest","id":"tdx","debug":true,"sept-ve-disable":true,"quote-generation-socket":{"type": "vsock", "cid":"2","port":"4050"}}' \
+	-object memory-backend-ram,id=ram1,size=${MEM}G,private=on \
 	-machine q35,kernel_irqchip=split,confidential-guest-support=tdx,memory-backend=ram1 \
 	-bios $BIOS_IMAGE \
 	-d guest_errors \
