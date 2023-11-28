@@ -10,7 +10,7 @@
 # DESCRIPTION END #
 
 # variables
-KERNEL_PATH=/root/linux_next_mainline
+KERNEL_PATH=/root/intel_next_master
 
 # common functions
 script_path() {
@@ -24,18 +24,17 @@ clone() {
   cd "${KERNEL_PATH}" || exit 1
   echo "switched to ${KERNEL_PATH}"
   #git clone https://github.com/torvalds/linux.git
-  git clone https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+  git clone https://github.com/intel-innersource/os.linux.intelnext.kernel.git
   cd -- || exit 1
 }
 
 checkout() {
-  cd "${KERNEL_PATH}"/linux-next || exit 1
+  cd "${KERNEL_PATH}"/os.linux.intelnext.kernel || exit 1
   git checkout master
   git reset --hard origin/master
   echo "start to checkout to latest tag..."
   git fetch --all
   TAG=$(git tag --list --sort=-creatordate | head -1)
-  #TAG="next-20230530"
   git checkout "${TAG}"
   TAG_VERIFY=$(git describe --tags --exact-match)
   [ "${TAG}" = "${TAG_VERIFY}" ] || exit 1
@@ -44,8 +43,13 @@ checkout() {
 }
 
 kconfig() {
-  cd "${KERNEL_PATH}"/linux-next || exit 1
-  cp "$SOURCE_PATH"/tdx.gold.config .config
+  cd "${KERNEL_PATH}"/os.linux.intelnext.kernel || exit 1
+  #cp "$SOURCE_PATH"/tdx.gold.config .config
+  rm -rf config
+  TAG_DATE=${TAG#*2023}
+  config_source=2023-${TAG_DATE}
+  wget https://ubit-artifactory-or.intel.com/artifactory/intelnext-or-local/dcg-pss-eywa-release/archive/"$config_source"/config
+  cp config .config
   make olddefconfig
   ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER --enable CONFIG_KVM_GUEST
   ./scripts/config --enable CONFIG_FUSE_FS --enable CONFIG_VIRTIO_FS --enable CONFIG_VIRTIO_BALLOON --enable CONFIG_VIRTIO_PMEM
@@ -59,7 +63,7 @@ kconfig() {
 }
 
 compile() {
-  cd "${KERNEL_PATH}"/linux-next || exit 1
+  cd "${KERNEL_PATH}"/os.linux.intelnext.kernel || exit 1
   rm -rf arch/x86/boot/bzImage
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
   grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
@@ -80,7 +84,7 @@ SOURCE_PATH=$(script_path)
 
 # Do the work
 # step 0
-[ ! -d "$KERNEL_PATH"/linux-next ] && clone
+[ ! -d "$KERNEL_PATH"/os.linux.intelnext.kernel ] && clone
 
 echo "####################################################################"
 echo "step 1:"
@@ -113,11 +117,11 @@ echo "####################################################################"
 grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
 grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
 grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
-KERNEL_IMAGE="$KERNEL_PATH"/linux-next/arch/x86/boot/bzImage."${TAG}"
+KERNEL_IMAGE="$KERNEL_PATH"/os.linux.intelnext.kernel/arch/x86/boot/bzImage."${TAG}"
 
 #legacy VM test only
 export SSHPASS='123456'
-PORT=10099
+PORT=10088
 SLEEP=30
 
 cd ${SOURCE_PATH}
@@ -138,6 +142,6 @@ sleep 10
 
 # step 5
 cd 2023WW48
-./clkv run -p spr -o hongyu -x "cycle=756 && feature=TDX"
+./clkv run -p spr -o hongyu -x "cycle=758 && feature=TDX"
 ./clkv status -o hongyu
-./clkv upload -c 756 -L lab -o hongyu
+./clkv upload -c 758 -L lab -o hongyu
