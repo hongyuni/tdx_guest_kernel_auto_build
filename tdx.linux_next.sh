@@ -10,7 +10,7 @@
 # DESCRIPTION END #
 
 # variables
-KERNEL_PATH=/root/linux_next_mainline
+KERNEL_PATH=/home/tdx/linux_next_mainline
 
 # common functions
 script_path() {
@@ -47,14 +47,17 @@ kconfig() {
   cd "${KERNEL_PATH}"/linux-next || exit 1
   cp "$SOURCE_PATH"/tdx.gold.config .config
   make olddefconfig
-  ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER --enable CONFIG_KVM_GUEST
+  ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER --enable CONFIG_KVM_GUEST --enable CONFIG_UNACCEPTED_MEMORY --enable CONFIG_TSM_REPORTS
   ./scripts/config --enable CONFIG_FUSE_FS --enable CONFIG_VIRTIO_FS --enable CONFIG_VIRTIO_BALLOON --enable CONFIG_VIRTIO_PMEM
   ./scripts/config --enable CONFIG_XFS_SUPPORT_V4 --enable CONFIG_XFS_ONLINE_SCRUB --enable CONFIG_XFS_ONLINE_REPAIR --enable CONFIG_XFS_WARN --enable CONFIG_XFS_DEBUG
+  ./scripts/config --disable CONFIG_ICE
   ./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
   yes "" | make config
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
   grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
   grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
+  grep -r "CONFIG_UNACCEPTED_MEMORY=y" .config || exit 1
+  grep -r "CONFIG_TSM_REPORTS=y" .config || exit 1
   #./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
 }
 
@@ -64,6 +67,8 @@ compile() {
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
   grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
   grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
+  grep -r "CONFIG_UNACCEPTED_MEMORY=y" .config || exit 1
+  grep -r "CONFIG_TSM_REPORTS=y" .config || exit 1
   make ARCH=x86_64 CC="ccache gcc" -j"$(nproc)" -C ./
   cp arch/x86/boot/bzImage arch/x86/boot/bzImage."$TAG"
   ln -s -f arch/x86/boot/bzImage."$TAG" bzImage.ddt
@@ -92,7 +97,9 @@ checkout
 
 echo "####################################################################"
 echo "step 2:"
-echo "revise CONFIG_INTEL_TDX_GUEST=y/CONFIG_TDX_GUEST_DRIVER=y/CONFIG_KVM_GUEST=y and append tag info $TAG to CONFIG_LOCALVERSION"
+echo "revise all neccessary kconfigs and append tag info $TAG to CONFIG_LOCALVERSION"
+echo "kconfig list: CONFIG_INTEL_TDX_GUEST=y CONFIG_KVM_GUEST=y CONFIG_TDX_GUEST_DRIVER=y"
+echo "		    CONFIG_UNACCEPTED_MEMORY=y CONFIG_TSM_REPORTS=y"
 echo "####################################################################"
 
 # step 2
@@ -113,6 +120,8 @@ echo "####################################################################"
 grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
 grep -r "CONFIG_KVM_GUEST=y" .config || exit 1
 grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
+grep -r "CONFIG_UNACCEPTED_MEMORY=y" .config || exit 1
+grep -r "CONFIG_TSM_REPORTS=y" .config || exit 1
 KERNEL_IMAGE="$KERNEL_PATH"/linux-next/arch/x86/boot/bzImage."${TAG}"
 
 #legacy VM test only
@@ -121,23 +130,23 @@ PORT=10099
 SLEEP=30
 
 cd ${SOURCE_PATH}
-rm -rf vm_*.log
+#rm -rf vm_*.log
 
-prepare_guest_image()
-{
-  sleep $SLEEP
-  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
-}
+#prepare_guest_image()
+#{
+#  sleep $SLEEP
+#  sshpass -e ssh -p $PORT root@localhost -o StrictHostKeyChecking=no "poweroff"
+#}
 
 
 # step 4
 # Bootup legacy VM using TDX SW ingredients and prepare guest image
-nohup sh ${SOURCE_PATH}/qemu.legacy.sh "$KERNEL_IMAGE" > vm_legacy.log &
-prepare_guest_image
-sleep 10
+#nohup sh ${SOURCE_PATH}/qemu.legacy.sh "$KERNEL_IMAGE" > vm_legacy.log &
+#prepare_guest_image
+#sleep 10
 
 # step 5
-cd 2023WW48
-./clkv run -p spr -o hongyu -x "cycle=756 && feature=TDX"
+cd 2023WW51
+./clkv run -p spr -o hongyu -x "cycle=778 && feature=TDX"
 ./clkv status -o hongyu
-./clkv upload -c 756 -L lab -o hongyu
+./clkv upload -c 778 -o hongyu
