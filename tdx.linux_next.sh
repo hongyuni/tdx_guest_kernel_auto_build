@@ -35,7 +35,6 @@ checkout() {
   echo "start to checkout to latest tag..."
   git fetch --all
   TAG=$(git tag --list --sort=-creatordate | head -1)
-  #TAG="next-20230530"
   git checkout "${TAG}"
   TAG_VERIFY=$(git describe --tags --exact-match)
   [ "${TAG}" = "${TAG_VERIFY}" ] || exit 1
@@ -45,12 +44,13 @@ checkout() {
 
 kconfig() {
   cd "${KERNEL_PATH}"/linux-next || exit 1
-  cp "$SOURCE_PATH"/tdx.gold.config .config
+  #cp "$SOURCE_PATH"/tdx.gold.config .config
   make olddefconfig
   ./scripts/config --enable CONFIG_INTEL_TDX_GUEST --enable CONFIG_VIRT_DRIVERS --enable CONFIG_TDX_GUEST_DRIVER --enable CONFIG_KVM_GUEST --enable CONFIG_UNACCEPTED_MEMORY --enable CONFIG_TSM_REPORTS
   ./scripts/config --enable CONFIG_FUSE_FS --enable CONFIG_VIRTIO_FS --enable CONFIG_VIRTIO_BALLOON --enable CONFIG_VIRTIO_PMEM
   ./scripts/config --enable CONFIG_XFS_SUPPORT_V4 --enable CONFIG_XFS_ONLINE_SCRUB --enable CONFIG_XFS_ONLINE_REPAIR --enable CONFIG_XFS_WARN --enable CONFIG_XFS_DEBUG
-  ./scripts/config --disable CONFIG_ICE
+  ./scripts/config --disable CONFIG_ICE --disable CONFIG_X86_DEBUG_FPU
+  ./scripts/config --enabled CONFIG_FW_LOADER_COMPRESS_ZSTD --enable CONFIG_SQUASHFS_ZSTD --enable CONFIG_CRYPTO_ZSTD
   ./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
   yes "" | make config
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
@@ -69,10 +69,22 @@ compile() {
   grep -r "CONFIG_TDX_GUEST_DRIVER=y" .config || exit 1
   grep -r "CONFIG_UNACCEPTED_MEMORY=y" .config || exit 1
   grep -r "CONFIG_TSM_REPORTS=y" .config || exit 1
-  make ARCH=x86_64 CC="ccache gcc" -j"$(nproc)" -C ./
+  rm -rf rpmbuild/RPMS/x86_64/*.rpm
+  make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j"$(nproc)" -C ./
+  make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j"$(nproc)" -C ./ rpm-pkg
   cp arch/x86/boot/bzImage arch/x86/boot/bzImage."$TAG"
   ln -s -f arch/x86/boot/bzImage."$TAG" bzImage.ddt
+  kernel_rpm=$(find rpmbuild/RPMS/ -name "kernel-[0-9]*.rpm")
+  kernel_header=$(find rpmbuild/RPMS/ -name "kernel-h*.rpm")
+  kernel_devel=$(find rpmbuild/RPMS/ -name "kernel-d*.rpm")
+  rm -rf kernel_rpm kernel_header kernel_devel
+  ln -s -f $kernel_rpm kernel_rpm
+  ln -s -f $kernel_header kernel_header
+  ln -s -f $kernel_devel kernel_devel
   ls -l bzImage.ddt | grep "bzImage.$TAG" || exit 1
+  ls -l kernel_rpm | grep "kernel-[0-9]*" || exit 1
+  ls -l kernel_header | grep "kernel-h*" || exit 1
+  ls -l kernel_devel | grep "kernel-d*" || exit 1
 }
 
 #set -x
@@ -146,7 +158,8 @@ cd ${SOURCE_PATH}
 #sleep 10
 
 # step 5
-cd 2023WW51
-./clkv run -p spr -o hongyu -x "cycle=778 && feature=TDX"
+cd 2024WW36
+rm -rf hongyu
+./clkv run -p spr -o hongyu -x "cycle=1189 && feature=TDX"
 ./clkv status -o hongyu
-./clkv upload -c 778 -o hongyu
+./clkv upload -c 1189 -o hongyu
