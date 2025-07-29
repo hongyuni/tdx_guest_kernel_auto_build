@@ -50,7 +50,7 @@ kconfig() {
   ./scripts/config --enable CONFIG_FUSE_FS --enable CONFIG_VIRTIO_FS --enable CONFIG_VIRTIO_BALLOON --enable CONFIG_VIRTIO_PMEM
   ./scripts/config --enable CONFIG_XFS_SUPPORT_V4 --enable CONFIG_XFS_ONLINE_SCRUB --enable CONFIG_XFS_ONLINE_REPAIR --enable CONFIG_XFS_WARN --enable CONFIG_XFS_DEBUG
   ./scripts/config --disable CONFIG_ICE --disable CONFIG_X86_DEBUG_FPU
-  ./scripts/config --enabled CONFIG_FW_LOADER_COMPRESS_ZSTD --enable CONFIG_SQUASHFS_ZSTD --enable CONFIG_CRYPTO_ZSTD
+  ./scripts/config --enable CONFIG_FW_LOADER_COMPRESS_ZSTD --enable CONFIG_SQUASHFS_ZSTD --enable CONFIG_CRYPTO_ZSTD
   ./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
   yes "" | make config
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
@@ -70,13 +70,15 @@ compile() {
   grep -r "CONFIG_UNACCEPTED_MEMORY=y" .config || exit 1
   grep -r "CONFIG_TSM_REPORTS=y" .config || exit 1
   rm -rf rpmbuild/RPMS/x86_64/*.rpm
-  make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j"$(nproc)" -C ./
-  make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j"$(nproc)" -C ./ rpm-pkg
+  #make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j"$(nproc)" -C ./
+  #make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j"$(nproc)" -C ./ rpm-pkg
+  make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j$(nproc) -C ./
+  make ARCH=x86_64 CC="gcc" HOSTCC="gcc" -j$(nproc) -C ./ rpm-pkg
   cp arch/x86/boot/bzImage arch/x86/boot/bzImage."$TAG"
   ln -s -f arch/x86/boot/bzImage."$TAG" bzImage.ddt
   kernel_rpm=$(find rpmbuild/RPMS/ -name "kernel-[0-9]*.rpm")
   kernel_header=$(find rpmbuild/RPMS/ -name "kernel-h*.rpm")
-  kernel_devel=$(find rpmbuild/RPMS/ -name "kernel-d*.rpm")
+  kernel_devel=$(find rpmbuild/RPMS/ -name "kernel-dev*.rpm")
   rm -rf kernel_rpm kernel_header kernel_devel
   ln -s -f $kernel_rpm kernel_rpm
   ln -s -f $kernel_header kernel_header
@@ -158,8 +160,8 @@ cd ${SOURCE_PATH}
 #sleep 10
 
 # step 5
-cd 2024WW36
+cd 2025WW03
 rm -rf hongyu
-./clkv run -p spr -o hongyu -x "cycle=1189 && feature=TDX"
+./clkv run -p spr -o hongyu -x "cycle=1372 && feature=TDX"
 ./clkv status -o hongyu
-./clkv upload -c 1189 -o hongyu
+./clkv upload -c 1372 -o hongyu
