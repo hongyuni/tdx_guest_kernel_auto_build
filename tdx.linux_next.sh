@@ -51,6 +51,7 @@ kconfig() {
   ./scripts/config --enable CONFIG_XFS_SUPPORT_V4 --enable CONFIG_XFS_ONLINE_SCRUB --enable CONFIG_XFS_ONLINE_REPAIR --enable CONFIG_XFS_WARN --enable CONFIG_XFS_DEBUG
   ./scripts/config --disable CONFIG_ICE --disable CONFIG_X86_DEBUG_FPU
   ./scripts/config --enable CONFIG_FW_LOADER_COMPRESS_ZSTD --enable CONFIG_SQUASHFS_ZSTD --enable CONFIG_CRYPTO_ZSTD
+  ./scripts/config --enable CONFIG_LRU_GEN --enable CONFIG_LRU_GEN_ENABLED --enable CONFIG_LRU_GEN_WALKS_MMU
   ./scripts/config --set-str CONFIG_LOCALVERSION -"$TAG"
   yes "" | make config
   grep -r "CONFIG_INTEL_TDX_GUEST=y" .config || exit 1
@@ -162,6 +163,6 @@ cd ${SOURCE_PATH}
 # step 5
 cd 2025WW03
 rm -rf hongyu
-./clkv run -p spr -o hongyu -x "cycle=1372 && feature=TDX"
+./clkv run -p spr -o hongyu -x "cycle=1384 && feature=TDX"
 ./clkv status -o hongyu
-./clkv upload -c 1372 -o hongyu
+./clkv upload -c 1384 -o hongyu
